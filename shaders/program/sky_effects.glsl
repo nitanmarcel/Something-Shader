@@ -5,6 +5,8 @@
 out vec2 texcoord;
 out vec4 glcolor;
 
+uniform int renderStage;
+
 void main() {
 	gl_Position = ftransform();
 	texcoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
@@ -21,6 +23,8 @@ uniform float alphaTestRef = 0.1;
 in vec2 texcoord;
 in vec4 glcolor;
 
+uniform int renderStage;
+
 /* RENDERTARGETS: 0 */
 layout(location = 0) out vec4 color;
 
@@ -29,5 +33,11 @@ void main() {
 	if (color.a < alphaTestRef) {
 		discard;
 	}
+	#ifdef SKY_TEXTURE
+		bool isSun = renderStage == MC_RENDER_STAGE_SUN;
+		if (isSun) {
+			discard;
+		}
+	#endif
 }
 #endif // FRAGMENT_SHADER
