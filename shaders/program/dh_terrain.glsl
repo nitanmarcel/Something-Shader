@@ -1,6 +1,8 @@
 
 #version 330 compatibility
 
+#include "/lib/noise.glsl"
+
 #ifdef VERTEX_SHADER
 
 varying vec4 pos;
@@ -56,7 +58,7 @@ void main() {
 	color *= lightBrightness;
     
 	vec3 worldPos = mat3(gbufferModelViewInverse) * pos.xyz + cameraPosition;
-    vec3 noisePos = mod(worldPos * 4.0, 64.0);
+	vec3 noisePos = vec3(noise(worldPos));
     
 	vec4 albedo = color;
 
