@@ -58,7 +58,10 @@ void main() {
 
 	float stars_threshold = 8.0f;
 	float stars_exposure = 16.0f;
-	float stars = pow(clamp(noise(stars_direction * 200.0f), 0.0f, 1.0f), stars_threshold) * stars_exposure;
+
+	float stars_brightness = noise(stars_direction * 100.0f + vec3(worldTime));
+
+	float stars = pow(clamp(noise(stars_direction * 200.0f), 0.0f, 1.0f), stars_threshold) * stars_brightness * stars_exposure;
 	stars *= mix(0.4, 1.4, noise(stars_direction * 100.0f + vec3(worldTime)));
 
     if (renderStage == MC_RENDER_STAGE_STARS) {
