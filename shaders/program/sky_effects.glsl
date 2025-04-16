@@ -1,4 +1,5 @@
 #version 330 compatibility
+#include "/lib/settings.glsl"
 
 #ifdef VERTEX_SHADER
 
@@ -34,10 +35,12 @@ void main() {
 		discard;
 	}
 	#ifdef SKY_TEXTURE
-		bool isSun = renderStage == MC_RENDER_STAGE_SUN;
-		if (isSun) {
-			discard;
-		}
+		#if SKY_QUALITY != SKY_QUALITY_LOW
+			bool isSun = renderStage == MC_RENDER_STAGE_SUN;
+			if (isSun) {
+				discard;
+			}
+		#endif
 	#endif
 }
 #endif // FRAGMENT_SHADER

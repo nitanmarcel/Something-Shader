@@ -1,8 +1,19 @@
 // https://github.com/wwwtyro/glsl-atmosphere/blob/master/index.glsl
 
 #define PI 3.141592
-#define iSteps 16
-#define jSteps 8
+
+#include "/lib/settings.glsl"
+
+#if SKY_QUALITY == SKY_QUALITY_LOW
+    #define iSteps 6
+    #define jSteps 3
+#elif SKY_QUALITY == SKY_QUALITY_MEDIUM
+    #define iSteps 10
+    #define jSteps 5
+#else
+    #define iSteps 16
+    #define jSteps 8
+#endif
 
 vec2 rsi(vec3 r0, vec3 rd, float sr) {
     // ray-sphere intersection that assumes

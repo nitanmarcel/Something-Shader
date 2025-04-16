@@ -1,0 +1,5 @@
+#define SKY_QUALITY_LOW    0
+#define SKY_QUALITY_MEDIUM 1
+#define SKY_QUALITY_HIGH   2
+
+#define SKY_QUALITY 2 //[0 1 2]
