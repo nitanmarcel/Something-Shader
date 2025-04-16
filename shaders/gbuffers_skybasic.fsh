@@ -1,6 +1,7 @@
 #version 330 compatibility
 
 #include "/lib/atmosphere.glsl"
+#include "/lib/noise.glsl"
 
 uniform int renderStage;
 uniform float viewHeight;
@@ -11,6 +12,7 @@ uniform mat4 gbufferProjectionInverse;
 uniform vec3 fogColor;
 uniform vec3 sunPosition;
 uniform vec3 cameraPosition;
+uniform int worldTime;
 
 in vec4 glcolor;
 
@@ -22,7 +24,6 @@ vec3 screenToView(vec3 screenPos) {
 
 /* RENDERTARGETS: 0 */
 layout(location = 0) out vec4 color;
-
 
 
 void main() {
@@ -52,8 +53,16 @@ void main() {
 
   	vec3 horizonColor = vec3(1, 1, 1) * 0.8;
 
+	vec2 uv = gl_FragCoord.xy * vec2(viewHeight, viewWidth);
+	vec3 stars_direction = worldViewDir;
+
+	float stars_threshold = 8.0f;
+	float stars_exposure = 16.0f;
+	float stars = pow(clamp(noise(stars_direction * 200.0f), 0.0f, 1.0f), stars_threshold) * stars_exposure;
+	stars *= mix(0.4, 1.4, noise(stars_direction * 100.0f + vec3(worldTime)));
+
     if (renderStage == MC_RENDER_STAGE_STARS) {
-        skyColor = mix(skyColor, glcolor.rgb, glcolor.a * 0.5);
+        skyColor = mix(skyColor, vec3(stars), 0.15);
     }
 
 	color = vec4( mix(skyColor, fogColor, .25), 1.0 );
