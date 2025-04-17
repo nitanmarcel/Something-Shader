@@ -1,10 +1,8 @@
 #version 330 compatibility
 
 #include "/lib/sky/atmosphere.glsl"
-#include "/lib/sky/stars.glsl"
 #include "/lib/utils.glsl"
 
-uniform int renderStage;
 uniform float viewHeight;
 uniform float viewWidth;
 uniform mat4 gbufferModelView;
@@ -13,7 +11,6 @@ uniform mat4 gbufferProjectionInverse;
 uniform vec3 fogColor;
 uniform vec3 sunPosition;
 uniform vec3 cameraPosition;
-uniform int worldTime;
 
 in vec4 glcolor;
 
@@ -32,12 +29,6 @@ void main() {
 	vec3 worldSunDir = mat3(gbufferModelViewInverse) * sunPosition;
 
 	vec3 skyColor = calculateSkyColor(worldViewDir, worldSunDir);
-
-	vec3 stars = getStars(worldViewDir, worldTime);
-
-    if (renderStage == MC_RENDER_STAGE_STARS) {
-        skyColor = mix(skyColor, vec3(stars), 0.15);
-    }
 
 	color = vec4( mix(skyColor, fogColor, .25), 1.0 );
 }

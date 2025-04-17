@@ -3,6 +3,10 @@
 #define PI 3.141592
 
 #include "/lib/settings.glsl"
+#include "/lib/noise.glsl"
+
+uniform int renderStage;
+uniform int worldTime;
 
 #if SKY_QUALITY == SKY_QUALITY_LOW
     #define iSteps 6
@@ -132,6 +136,25 @@ vec3 atmosphere(vec3 r, vec3 r0, vec3 pSun, float iSun, float rPlanet, float rAt
     return mix(nightSkyColor, scatteredLight, dayNightFactor);
 }
 
+vec3 getStars(vec3 pos) {
+	vec3 stars_direction = pos;
+
+	float stars_threshold = 8.0f;
+	float stars_exposure = 16.0f;
+
+	float stars_brightness = noise(stars_direction * 100.0 + vec3(worldTime * 0.01));
+
+	float stars = pow(clamp(noise(stars_direction * 200.0), 0.0f, 1.0), stars_threshold) * stars_brightness * stars_exposure;
+	
+    vec3 color = mix(
+        vec3(0.8, 0.8, 1.0),
+        vec3(1.0, 0.8, 0.6),
+        noise(stars_direction * 50.0 + vec3(worldTime * 0.02))
+    );
+
+    return vec3(stars) * color;
+}
+
 vec3 calculateSkyColor(vec3 pos, vec3 sun) {
 	vec3 skyColor = atmosphere(
 		pos,        // normalized ray direction
@@ -146,6 +169,12 @@ vec3 calculateSkyColor(vec3 pos, vec3 sun) {
 		1.2e3,                          // Mie scale height
 		0.758                           // Mie preferred scattering direction
 		);
+
+    if (renderStage == MC_RENDER_STAGE_STARS) {
+        vec3 stars = getStars(pos);
+        skyColor = mix(skyColor, stars, 0.15);
+    }
+
 
     return skyColor;
 }
