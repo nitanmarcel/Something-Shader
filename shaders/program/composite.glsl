@@ -12,6 +12,7 @@ void main() {
 
 #ifdef FRAGMENT_SHADER
 
+#include "/lib/utils.glsl"
 #include "/lib/uncharted.glsl"
 #include "/lib/settings.glsl"
 
@@ -27,6 +28,11 @@ void main() {
 	color.rgb = pow(color.rgb, vec3(2.2));
 
 	color.rgb = pow(color.rgb, vec3(1.0/GAMMA));
+
+	vec3 hsv = rgb2hsv(color.rgb);
+	hsv.y *= SATURATION;
+
+	color.rgb = hsv2rgb(hsv);
 
 	color.rgb = unchartedTonemapping(color.rgb * EXPOSURE);
 	color.rgb = pow(color.rgb, vec3(1/2.2));

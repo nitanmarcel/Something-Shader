@@ -23,3 +23,7 @@ value.EXPOSURE.1.4=Default
 option.GAMMA=Gamma Correction
 option.GAMMA.comment=Adjusts the mid-tone brightness while preserving highlights and shadows.
 value.EXPOSURE.1.3=Default
+
+option.SATURATION=Saturation
+option.SATURATION.comment=Adjusts overall colorfulness of the image.
+value.SATURATION.1.0=Default
