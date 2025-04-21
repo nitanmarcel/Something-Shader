@@ -27,3 +27,36 @@ value.EXPOSURE.1.3=Default
 option.SATURATION=Saturation
 option.SATURATION.comment=Adjusts overall colorfulness of the image.
 value.SATURATION.1.0=Default
+
+screen.CAMERA_SETTINGS=Camera Settings
+screen.CAMERA_SETTINGS.comment=Change view/camera settings.
+
+option.BLOOM=Bloom
+option.BLOOM.comment==Adds a soft glow around bright areas, creating a dreamy light bleeding effect. Higher values increase intensity.
+
+option.BLOOM_STRENGTH=Bloom Strength
+option.BLOOM_STRENGTH.comment=Controls the intensity of the bloom effect. Higher values create stronger glows around bright objects and more pronounced light bleeding.
+value.BLOOM_STRENGTH.0.027=15%
+value.BLOOM_STRENGTH.0.036=20%
+value.BLOOM_STRENGTH.0.045=25%
+value.BLOOM_STRENGTH.0.054=30%
+value.BLOOM_STRENGTH.0.063=35%
+value.BLOOM_STRENGTH.0.072=40%
+value.BLOOM_STRENGTH.0.081=45%
+value.BLOOM_STRENGTH.0.09=50%
+value.BLOOM_STRENGTH.0.10=55%
+value.BLOOM_STRENGTH.0.11=60%
+value.BLOOM_STRENGTH.0.12=Default
+value.BLOOM_STRENGTH.0.13=70%
+value.BLOOM_STRENGTH.0.14=75%
+value.BLOOM_STRENGTH.0.15=80%
+value.BLOOM_STRENGTH.0.16=85%
+value.BLOOM_STRENGTH.0.17=90%
+value.BLOOM_STRENGTH.0.18=95%
+value.BLOOM_STRENGTH.0.19=100%
+value.BLOOM_STRENGTH.0.21=110%
+value.BLOOM_STRENGTH.0.23=120%
+value.BLOOM_STRENGTH.0.25=130%
+value.BLOOM_STRENGTH.0.28=150%
+value.BLOOM_STRENGTH.0.32=180%
+value.BLOOM_STRENGTH.10.00=§cInsane
