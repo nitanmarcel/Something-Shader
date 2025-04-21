@@ -37,33 +37,16 @@ in vec2 texcoord;
 /* RENDERTARGETS: 0 */
 layout(location = 0) out vec4 color;
 
-float fbm(vec3 x, int octaves) {
-    float v = 0.0;
-    float a = 0.5;
-    float frequency = 1.0;
-
-    float warpStrength = 0.35 * (1.0 + 0.5 * sin(frameTimeCounter * 0.001));
-    vec3 warpOffset = vec3(0.0);
-
-    for (int i = 0; i < octaves; ++i) {
-        vec3 warpedPos = x + warpOffset;
-
-        if (i > 0) {
-            vec3 curlVec = curlNoise(warpedPos * frequency * 0.5) * (warpStrength * 0.7);
-            warpedPos += curlVec;
-        }
-
-        v += a * noise(warpedPos * frequency);
-
-        warpOffset.x = noise(warpedPos * frequency * 0.5 + vec3(1.7, 9.2, 3.1));
-        warpOffset.y = noise(warpedPos * frequency * 0.5 + vec3(8.3, 2.8, 7.1));
-        warpOffset.z = noise(warpedPos * frequency * 0.5 + vec3(4.2, 5.9, 3.4));
-        warpOffset *= warpStrength;
-        frequency *= 2.0;
-        a *= 0.5;
-    }
-
-    return v;
+float fbm(vec3 p)
+{
+    mat3 m = mat3(0.0, 1.60,  1.20, -1.6, 0.72, -0.96, -1.2, -0.96, 1.28);
+    float f = 0.0;
+    f += noise(p) / 2; p = m * p * 1.1;
+    f += noise(p) / 4; p = m * p * 1.2;
+    f += noise(p) / 6; p = m * p * 1.3;
+    f += noise(p) / 12; p = m * p * 1.4;
+    f += noise(p) / 24;
+    return f;
 }
 
 void main() {
@@ -87,21 +70,13 @@ void main() {
         stormFactor += thunderStrength;
     #endif
 
+    float cirrus = 0.25 + stormFactor * 0.3;
+    float cumulus = 0.45 + stormFactor * 0.6;
+
     if (rayDir.y > 0.0 && depth >= 1.0) {
-        float cloudHeight = (600 - feetPlayerPos.y) / rayDir.y;
+        float cloudHeight = (1024 - feetPlayerPos.y) / rayDir.y;
         vec3 cloudPos = feetPlayerPos + cloudHeight * rayDir;
 
-        vec3 cloudSamplePos = vec3(cloudPos.xz * 0.01, wind);
-        float cloudDensity = fbm(cloudSamplePos, 6);
-        cloudDensity = mix(cloudDensity, 1.0, stormFactor * 0.7);
-
-        float cloudCoverage = mix(0.7, 0.3, stormFactor);
-        float detailNoise = fbm(cloudSamplePos * 2.0, 3) * 0.3;
-        cloudDensity = smoothstep(cloudCoverage, cloudCoverage + 0.2, cloudDensity);
-        cloudDensity = pow(cloudDensity, 1.5);
-
-        float distanceFade = 1.0 - clamp(length(cloudPos) / 10000.0, 0.0, 1.0);
-        cloudDensity *= distanceFade;
 
         vec3 worldSunDir = normalize(mat3(gbufferModelViewInverse) * sunPosition);
         float sunAngle = dot(normalize(rayDir), worldSunDir);
@@ -110,8 +85,20 @@ void main() {
         vec3 cloudColor = vec3(1.0, 1.0, 1.0) * dayFactor;
         cloudColor = mix(cloudColor, cloudColor * 0.4, rainStrength);
 
-        float cloudAlpha = mix(0.5, 0.9, stormFactor);
-        color.rgb = mix(color.rgb, cloudColor, cloudDensity * cloudAlpha);
+        float density = smoothstep(1.0 - cirrus, 1.0, fbm(cloudPos.xyz / cloudPos.y * 2.0 + wind * 0.05)) * 0.3;
+
+        float distanceFade = 1.0 - clamp(length(cloudPos) / 10000.0, 0.0, 1.0);
+        density *= distanceFade;
+
+        color.rgb = mix(color.rgb, cloudColor, density);
+
+        for (int i = 0; i < 12; i++) {
+            float density = smoothstep(1.0 - cumulus, 1.0, fbm((0.7 + float(i) * 0.01) * cloudPos.xyz / cloudPos.y + wind * 0.3));
+            float distanceFade = 1.0 - clamp(length(cloudPos) / 10000.0, 0.0, 1.0);
+            density *= distanceFade;
+            color.rgb = mix(color.rgb, cloudColor, density);        
+        }
+
     }
 }
 
