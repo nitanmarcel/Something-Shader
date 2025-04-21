@@ -13,6 +13,7 @@ void main() {
 #ifdef FRAGMENT_SHADER
 
 #include "/lib/uncharted.glsl"
+#include "/lib/settings.glsl"
 
 uniform sampler2D colortex0;
 
@@ -25,7 +26,9 @@ void main() {
 	color = texture(colortex0, texcoord);
 	color.rgb = pow(color.rgb, vec3(2.2));
 
-	color.rgb = unchartedTonemapping(color.rgb * 1.20);
+	color.rgb = pow(color.rgb, vec3(1.0/GAMMA));
+
+	color.rgb = unchartedTonemapping(color.rgb * EXPOSURE);
 	color.rgb = pow(color.rgb, vec3(1/2.2));
 
 }

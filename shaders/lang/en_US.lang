@@ -1,9 +1,25 @@
+#shaders/lang/en_us.lang
+
 profile.LOW=§aLow
 profile.MEDIUM=§aMedium
 profile.HIGH=§eHigh (Default)
+
+screen.SKY_SETTINGS=Sky Settings
+screen.SKY_SETTINGS.comment=Change sky settings
 
 option.SKY_QUALITY=Sky Quality
 option.SKY_QUALITY.comment=Select the level of detail for sky rendering
 value.SKY_QUALITY.0=§aLow
 value.SKY_QUALITY.1=§eMedium
 value.SKY_QUALITY.2=§eHigh
+
+screen.COLOR_SETTINGS=Color Settings
+screen.COLOR_SETTINGS.commend=Change color settings
+
+option.EXPOSURE=Exposure Adjustment
+option.EXPOSURE.comment=Controls the overall brightness of the scene.
+value.EXPOSURE.1.4=Default
+
+option.GAMMA=Gamma Correction
+option.GAMMA.comment=Adjusts the mid-tone brightness while preserving highlights and shadows.
+value.EXPOSURE.1.3=Default
