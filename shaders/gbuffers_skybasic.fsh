@@ -9,6 +9,7 @@ uniform mat4 gbufferModelView;
 uniform mat4 gbufferModelViewInverse;
 uniform mat4 gbufferProjectionInverse;
 uniform vec3 fogColor;
+uniform vec3 skyColor;
 uniform vec3 sunPosition;
 uniform vec3 cameraPosition;
 
@@ -28,7 +29,7 @@ void main() {
 	vec3 worldViewDir = mat3(gbufferModelViewInverse) * viewDir;
 	vec3 worldSunDir = mat3(gbufferModelViewInverse) * sunPosition;
 
-	vec3 skyColor = calculateSkyColor(worldViewDir, worldSunDir);
+	vec3 newSkyColor = calculateSkyColor(worldViewDir, worldSunDir);
 
-	color = vec4( mix(skyColor, fogColor, .25), 1.0 );
+	color.rgb = newSkyColor;
 }

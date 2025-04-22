@@ -34,13 +34,5 @@ void main() {
 	if (color.a < alphaTestRef) {
 		discard;
 	}
-	#ifdef SKY_TEXTURE
-		#if SKY_QUALITY != SKY_QUALITY_LOW
-			bool isSun = renderStage == MC_RENDER_STAGE_SUN;
-			if (isSun) {
-				discard;
-			}
-		#endif
-	#endif
 }
 #endif // FRAGMENT_SHADER

@@ -1,5 +1,6 @@
-
 #version 330 compatibility
+
+#define CLOUD_SCALE 0.004
 
 #ifdef VERTEX_SHADER
 
@@ -16,7 +17,7 @@ void main() {
 #ifdef FRAGMENT_SHADER
 
 #include "/lib/utils.glsl"
-#include "/lib/noise.glsl"
+#include "/lib/sky/atmosphere.glsl"
 
 uniform sampler2D colortex0;
 
@@ -26,27 +27,52 @@ uniform mat4 gbufferModelViewInverse;
 uniform float viewWidth;
 uniform float viewHeight;
 uniform float rainStrength;
-#ifdef IS_IRIS
-uniform float thunderStrength;
-#endif
 uniform float frameTimeCounter;
 uniform vec3 sunPosition;
+
+#ifdef DISTANT_HORIZONS
+    uniform sampler2D dhDepthTex0;
+#endif
 
 in vec2 texcoord;
 
 /* RENDERTARGETS: 0 */
 layout(location = 0) out vec4 color;
 
-float fbm(vec3 p)
-{
-    mat3 m = mat3(0.0, 1.60,  1.20, -1.6, 0.72, -0.96, -1.2, -0.96, 1.28);
-    float f = 0.0;
-    f += noise(p) / 2; p = m * p * 1.1;
-    f += noise(p) / 4; p = m * p * 1.2;
-    f += noise(p) / 6; p = m * p * 1.3;
-    f += noise(p) / 12; p = m * p * 1.4;
-    f += noise(p) / 24;
-    return f;
+float fbm(vec3 p) {
+    float total = 0.0;
+    float amplitude = 0.5;
+    float frequency = 1.0;
+    float lacunarity = 2.0;
+    float persistence = 0.5;
+    
+    for (int i = 0; i < 6; i++) {
+        float n = noise(p * frequency);
+        total += n * amplitude;
+        amplitude *= persistence;
+        frequency *= lacunarity;
+        
+        p += vec3(n * 0.2);
+    }
+    
+    return total;
+}
+
+vec3 CloudIntersection(vec3 rayOrigin, vec3 rayDir) {
+    float cloudAltitude = 100.0;
+    
+    float planeRayDist = 100000000.0;
+    vec3 intersectionPos = rayDir * planeRayDist;
+    
+    float rayPlaneAngle = rayDir.y;
+    
+    if (rayPlaneAngle > 0.0001) {
+        planeRayDist = (cloudAltitude - rayOrigin.y) / rayPlaneAngle;
+        
+        intersectionPos = rayOrigin + rayDir * planeRayDist;
+    }
+    
+    return intersectionPos;
 }
 
 void main() {
@@ -62,44 +88,56 @@ void main() {
     vec3 rayDir = normalize(mat3(gbufferModelViewInverse) * viewPos);
 
     float depth = texture(depthtex0, texcoord).r;
-
-    float wind = 0.0006 * frameTimeCounter * 10;
     
-    float stormFactor = rainStrength;
-    #ifdef IS_IRIS
-        stormFactor += thunderStrength;
+    #ifdef DISTANT_HORIZONS
+        float dhDepth = texture(dhDepthTex0, texcoord).r;
+        depth = min(dhDepth, depth);
     #endif
 
-    float cirrus = 0.25 + stormFactor * 0.3;
-    float cumulus = 0.45 + stormFactor * 0.6;
+    float wind = 0.005 * frameTimeCounter;
+    vec2 windDirection = vec2(0.8, 0.2);
 
+    float cirrus = 0.25 + rainStrength * 0.3;
+    float cumulus = 0.45 + rainStrength * 0.6;
     if (rayDir.y > 0.0 && depth >= 1.0) {
-        float cloudHeight = (1024 - feetPlayerPos.y) / rayDir.y;
-        vec3 cloudPos = feetPlayerPos + cloudHeight * rayDir;
+        float rayPlaneAngle = rayDir.y;
+        if (rayPlaneAngle > 0.0001) {
+            vec3 worldSunDir = normalize(mat3(gbufferModelViewInverse) * sunPosition);
+            float sunAngle = dot(normalize(rayDir), worldSunDir);
 
+            vec3 extinction = calculateExtinction(rayDir, worldSunDir);
+            float dayFactor = clamp(worldSunDir.y * 0.5 + 0.5, 0.1, 1.0);
+            
+            vec3 cloudColor = vec3(1.0, 1.0, 1.0) * dayFactor;
 
-        vec3 worldSunDir = normalize(mat3(gbufferModelViewInverse) * sunPosition);
-        float sunAngle = dot(normalize(rayDir), worldSunDir);
+            cloudColor *= extinction * 1.5;
 
-        float dayFactor = clamp(worldSunDir.y * 0.5 + 0.5, 0.1, 1.0);
-        vec3 cloudColor = vec3(1.0, 1.0, 1.0) * dayFactor;
-        cloudColor = mix(cloudColor, cloudColor * 0.4, rainStrength);
+            cloudColor = mix(cloudColor, cloudColor * 0.4, rainStrength);
 
-        float density = smoothstep(1.0 - cirrus, 1.0, fbm(cloudPos.xyz / cloudPos.y * 2.0 + wind * 0.05)) * 0.3;
+            vec3 cirrusPos = CloudIntersection(feetPlayerPos, rayDir);
+            cirrusPos.xz += windDirection * wind * 2.0;
 
-        float distanceFade = 1.0 - clamp(length(cloudPos) / 10000.0, 0.0, 1.0);
-        density *= distanceFade;
+            float cirrusShape = mix(fbm(cirrusPos * CLOUD_SCALE * 1.5), worleyNoise(cirrusPos * CLOUD_SCALE * 0.5), 0.3);
+             cirrusShape *= smoothstep(0.4, 0.6, noise(cirrusPos * CLOUD_SCALE * 0.2 + vec3(0, 0, wind * 0.5)));
+             float cirrusDensity = smoothstep(1.0 - cirrus, 1.0, cirrusShape) * 0.3;
 
-        color.rgb = mix(color.rgb, cloudColor, density);
+            vec3 cumulusPos = CloudIntersection(feetPlayerPos, rayDir);
+            cumulusPos.xz += windDirection * wind;
 
-        for (int i = 0; i < 12; i++) {
-            float density = smoothstep(1.0 - cumulus, 1.0, fbm((0.7 + float(i) * 0.01) * cloudPos.xyz / cloudPos.y + wind * 0.3));
-            float distanceFade = 1.0 - clamp(length(cloudPos) / 10000.0, 0.0, 1.0);
-            density *= distanceFade;
-            color.rgb = mix(color.rgb, cloudColor, density);        
+            float cloudShape = mix(fbm(cumulusPos * CLOUD_SCALE), worleyNoise(cumulusPos * CLOUD_SCALE * 0.5), 0.5);
+
+            float cloudDetail = fbm(cumulusPos * CLOUD_SCALE * 3.0) * 0.2;
+
+            cloudShape += cloudDetail;
+
+            float cumulusDensity = smoothstep(1.0 - cumulus, 1.0 - cumulus + 0.1, cloudShape);
+
+            float shadow = smoothstep(0.3, 0.7, cloudShape);
+            vec3 shadowedColor = mix(cloudColor * 0.7, cloudColor, shadow);
+
+            color.rgb = mix(color.rgb, cloudColor, cirrusDensity);
+            color.rgb = mix(color.rgb, shadowedColor, cumulusDensity);
         }
-
     }
 }
-
 #endif // FRAGMENT_SHADER

@@ -29,19 +29,22 @@ float noise(vec3 p) {
     return mix(y0, y1, u.z);
 }
 
-vec3 curlNoise(vec3 p) {
-    const float epsilon = 0.0001;
-    vec3 dx = vec3(epsilon, 0.0, 0.0);
-    vec3 dy = vec3(0.0, epsilon, 0.0);
-    vec3 dz = vec3(0.0, 0.0, epsilon);
+float worleyNoise(vec3 p) {
+    vec3 id = floor(p);
+    vec3 fd = fract(p);
     
-    float x1 = noise(p + dx) - noise(p - dx);
-    float y1 = noise(p + dy) - noise(p - dy);
-    float z1 = noise(p + dz) - noise(p - dz);
+    float minDist = 1.0;
     
-    float x2 = noise(p + dx) - noise(p - dx);
-    float y2 = noise(p + dy) - noise(p - dy);
-    float z2 = noise(p + dz) - noise(p - dz);
+    for (int z = -1; z <= 1; z++) {
+        for (int y = -1; y <= 1; y++) {
+            for (int x = -1; x <= 1; x++) {
+                vec3 offset = vec3(x, y, z);
+                vec3 cellId = id + offset;
+                vec3 cellCenter = cellId + random(cellId) * 0.8; // Random position within cell
+                minDist = min(minDist, length(p - cellCenter));
+            }
+        }
+    }
     
-    return normalize(vec3(y2 - z1, z2 - x1, x2 - y1));
+    return 1.0 - minDist;
 }
