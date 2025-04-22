@@ -1,34 +1,46 @@
 #version 330 compatibility
 
+varying vec3 geoNormal;
+varying vec3 tagent;
+
 #ifdef VERTEX_SHADER
 
 out vec2 lmcoord;
 out vec2 texcoord;
 out vec4 glcolor;
-
-varying vec3 normal;
+in vec4 at_tangent;
 
 uniform mat4 gbufferModelViewInverse;
 
 void main() {
-	gl_Position = ftransform();
-	texcoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
-	lmcoord = (gl_TextureMatrix[1] * gl_MultiTexCoord1).xy;
-	glcolor = gl_Color;
+    gl_Position = ftransform();
+    texcoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
+    lmcoord = (gl_TextureMatrix[1] * gl_MultiTexCoord1).xy;
+    glcolor = gl_Color;
 
+    tagent = gl_NormalMatrix * at_tangent.xyz;
+    tagent = normalize(mat3(gbufferModelViewInverse) * tagent);
 
-	normal = gl_NormalMatrix * gl_Normal;
-	normal = mat3(gbufferModelViewInverse) * normal;	
+    geoNormal = gl_NormalMatrix * gl_Normal;
+    geoNormal = normalize(mat3(gbufferModelViewInverse) * geoNormal);    
 }
 #endif // VERTEX_SHADER
 
 #ifdef FRAGMENT_SHADER
 
+#include "/lib/utils.glsl"
+
 uniform sampler2D lightmap;
 uniform sampler2D gtexture;
+uniform sampler2D normals;
+uniform sampler2D specular;
 
 uniform vec3 shadowLightPosition;
 uniform mat4 gbufferModelViewInverse;
+uniform mat4 gbufferProjectionInverse;
+uniform float viewWidth;
+uniform float viewHeight;
+
 
 uniform float alphaTestRef = 0.1;
 
@@ -36,23 +48,67 @@ in vec2 lmcoord;
 in vec2 texcoord;
 in vec4 glcolor;
 
-varying vec3 normal;
+uniform vec3 cameraPosition;
 
 /* RENDERTARGETS: 0 */
 layout(location = 0) out vec4 color;
 
-void main() {
-	color = texture(gtexture, texcoord) * glcolor;
-	color *= texture(lightmap, lmcoord);
-	if (color.a < alphaTestRef) {
-		discard;
-	}
+mat3 tbnNormalTangent(vec3 normal, vec3 tangent) {
+    vec3 bitangent = normalize(cross(tangent,normal));
+    return mat3(tangent, bitangent, normal);
+}
 
-	#ifndef DISABLE_INDIRECT_LIGHTING
-		vec3 shadowLightDirection = normalize(mat3(gbufferModelViewInverse) * shadowLightPosition);
-		float lightBrightness = clamp(dot(shadowLightDirection, normal), 0.2,1.0);
-		color *= lightBrightness;
-	#endif
-	
+float calculateLightingFactor(vec3 worldPos, vec3 viewDir) {
+    #ifndef DISABLE_INDIRECT_LIGHTING
+        vec3 shadowLightDirection = normalize(mat3(gbufferModelViewInverse) * shadowLightPosition);
+
+        vec4 normalData = texture(normals, texcoord)*2.0-1.0;
+
+        vec3 normalNormal = vec3(normalData.xy, sqrt(1.0 - dot(normalData.xy, normalData.xy))*2.0-1.0);
+        mat3 TBN = tbnNormalTangent(geoNormal, tagent);
+
+        vec3 normalWorld = TBN * normalNormal;
+        
+        vec4 specularData = texture(specular, texcoord);
+
+        float perceptualSmoothness = specularData.r;
+
+        float roughness = pow(1.0 - perceptualSmoothness, 2.0);
+
+        float smoothness = 1-roughness;
+
+        vec3 reflectionDir = reflect(-shadowLightDirection, normalWorld);
+        
+        float diffuseLight = roughness * clamp(dot(shadowLightDirection, normalWorld), 0.0,1.0);
+
+        float shininess = (1+(smoothness) * 100);
+
+        float specularLight = clamp(smoothness * pow(dot(reflectionDir, viewDir), shininess), 0.0, 1.0);
+
+        float ambientLight = 0.2;
+
+        return ambientLight + diffuseLight + specularLight;
+    #else
+        return 1.0;
+    #endif
+}
+
+void main() {
+    color = texture(gtexture, texcoord) * glcolor;
+    color *= texture(lightmap, lmcoord);
+    if (color.a < alphaTestRef) {
+        discard;
+    }
+
+    vec3 screenPos = vec3(gl_FragCoord.xy / vec2(viewWidth, viewHeight), 1.0);
+    vec3 viewPos = screenToView(screenPos, gbufferProjectionInverse);
+
+    vec3 feetPlayerPos = (gbufferModelViewInverse * vec4(viewPos, 1.0)).xyz;
+
+    vec3 worldPos = feetPlayerPos + cameraPosition;
+    vec3 viewDir = normalize(cameraPosition - worldPos);
+
+    float lightBrightness = calculateLightingFactor(worldPos, viewDir);
+    color *= lightBrightness;
 }
 #endif // FRAGMENT_SHADER
