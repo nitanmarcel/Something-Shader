@@ -1,6 +1,7 @@
 #version 330 compatibility
 
 #define CLOUD_SCALE 0.004
+#define FOG_DENSITY 0.5
 
 #ifdef VERTEX_SHADER
 
@@ -29,6 +30,8 @@ uniform float viewHeight;
 uniform float rainStrength;
 uniform float frameTimeCounter;
 uniform vec3 sunPosition;
+uniform int isEyeInWater;
+uniform vec3 fogColor;
 
 #ifdef DISTANT_HORIZONS
     uniform sampler2D dhDepthTex0;
@@ -73,6 +76,25 @@ vec3 CloudIntersection(vec3 rayOrigin, vec3 rayDir) {
     }
     
     return intersectionPos;
+}
+
+float fogFactor(
+    const float dist,
+    const float density
+) {
+    const float LOG2 = -1.442695;
+    float d = density * dist;
+    return 1.0 - clamp(exp2(d * d * LOG2), 0.0, 1.0);
+}
+
+
+void ApplyFog() {
+
+    if (isEyeInWater == 1) {
+        float fogDistance = gl_FragCoord.z / gl_FragCoord.w;
+        float fogAmount = fogFactor(fogDistance, FOG_DENSITY);
+        color.rgb = mix(color.rgb, fogColor, fogAmount);
+    }
 }
 
 void main() {
@@ -139,5 +161,7 @@ void main() {
             color.rgb = mix(color.rgb, shadowedColor, cumulusDensity);
         }
     }
+
+    ApplyFog();
 }
 #endif // FRAGMENT_SHADER

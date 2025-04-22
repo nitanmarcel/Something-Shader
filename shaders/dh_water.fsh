@@ -1,2 +1,3 @@
 #define FRAGMENT_SHADER
-#include "/program/dh_water.glsl"
+#define DISTANT_WATER
+#include "/program/water.glsl"
