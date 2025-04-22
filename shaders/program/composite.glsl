@@ -20,6 +20,7 @@ uniform sampler2D colortex0;
 
 in vec2 texcoord;
 uniform sampler2D colortex1;
+uniform float rainStrength;
 
 /* RENDERTARGETS: 0 */
 layout(location = 0) out vec4 color;
@@ -49,6 +50,11 @@ void main() {
 
 	float bloomStrength = BLOOM_STRENGTH * 0.08;
 	color.rgb = mix(color.rgb, blur, bloomStrength);
+
+	float blueHueIntensity = 0.01 + (rainStrength * 0.1);
+	vec3 blueHueColor = vec3(0.0, 0.4, 0.8);
+
+	color.rgb = mix(color.rgb, color.rgb * blueHueColor, blueHueIntensity);
 
 	color.rgb = unchartedTonemapping(color.rgb * EXPOSURE);
 	color.rgb = pow(color.rgb, vec3(1/2.2));
