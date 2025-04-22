@@ -80,7 +80,7 @@ void main() {
     #ifdef DISTANT_WATER
         vec2 dhTextcoord = gl_FragCoord.xy / vec2(viewWidth, viewHeight);
         float depth = texture(depthtex0, dhTextcoord).r;
-        if (depth <= 1.0) {
+        if (depth != 1.0) {
             discard;
         }
     #endif // DISTANT_WATER
