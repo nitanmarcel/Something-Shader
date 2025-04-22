@@ -28,7 +28,6 @@ uniform mat4 gbufferModelViewInverse;
 uniform float viewWidth;
 uniform float viewHeight;
 uniform float rainStrength;
-uniform float frameTimeCounter;
 uniform vec3 sunPosition;
 uniform int isEyeInWater;
 uniform vec3 fogColor;

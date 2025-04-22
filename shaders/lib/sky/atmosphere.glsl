@@ -3,6 +3,8 @@
 uniform int renderStage;
 uniform int worldTime;
 
+uniform float frameTimeCounter;
+
 float saturate(float x) {
     return clamp(x, 0.0, 1.0);
 }
@@ -31,17 +33,20 @@ float hash(vec3 p) {
 }
 
 vec3 getStars(vec3 pos) {
-    float stars_threshold = 6.0;
-    float stars_exposure = 30.0;
+    vec3 nPos = normalize(pos);
+    vec3 starPos = floor(nPos * 300.0) / 300.0;
 
-    float stars_brightness = hash(pos * 100.0 + vec3(worldTime * 0.01));
+    float stars_threshold = 5000.0;
+    float stars_exposure = 10.0;
 
-    float stars = pow(clamp(hash(pos * 200.0), 0.0, 1.0), stars_threshold) * stars_brightness * stars_exposure;
+    float stars_brightness = hash(starPos * 100.0 + vec3(frameTimeCounter * 0.0005));
+
+    float stars = pow(clamp(hash(starPos * 200.0), 0.0, 1.0), stars_threshold) * stars_brightness * stars_exposure;
     
     vec3 color = mix(
         vec3(1.0, 1.0, 1.3),
         vec3(1.3, 1.0, 0.7),
-        hash(pos * 50.0 + vec3(worldTime * 0.02))
+        hash(starPos * 50.0 + vec3(worldTime * 0.02))
     );
 
     return vec3(stars) * color * 0.5;
@@ -98,14 +103,15 @@ vec3 calculateSkyColor(vec3 pos, vec3 sun) {
         vec3 nightColor = vec3(0.05, 0.05, 0.1) * 0.5;
         skyColor = mix(skyColor, nightColor, nightDarkness);
     }
-    
-   if (renderStage == MC_RENDER_STAGE_STARS) {
+
+    if (renderStage == MC_RENDER_STAGE_SKY) {
+
         vec3 stars = getStars(viewDir);
         
         float starVisibility = smoothstep(0.05, -0.05, sunDir.y);
-        
+
         skyColor = mix(skyColor, max(skyColor, stars), starVisibility);
-    }
+    } 
     
     float hardness = 2000.0;
     float sunDiscThreshold = 0.99965;
