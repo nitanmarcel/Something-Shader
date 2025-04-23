@@ -3,10 +3,9 @@
 varying vec2 lmcoord;
 varying vec4 glcolor;
 varying vec2 texcoord;
+varying mat3 TBN;
 
 #define FOG_DENSITY 0.1
-
-varying vec3 normal;
 
 const float alphaTestRef = 0.1;
 
@@ -14,14 +13,22 @@ const float alphaTestRef = 0.1;
 
 uniform mat4 gbufferModelViewInverse;
 
+in vec4 at_tangent;
+
+mat3 tbnNormalTangent(vec3 normal, vec3 tangent, float handedness) {
+    vec3 bitangent = normalize(cross(tangent,normal) * handedness);
+    return mat3(tangent, bitangent, normal);
+}
+
 void main() {
 	gl_Position = ftransform();
+    texcoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
 	lmcoord = (gl_TextureMatrix[1] * gl_MultiTexCoord1).xy;
 	glcolor = gl_Color;
 
-    texcoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
-    normal = gl_NormalMatrix * gl_Normal;
-	normal = mat3(gbufferModelViewInverse) * normal;	
+    vec3 tagent = normalize(mat3(gbufferModelViewInverse) * (gl_NormalMatrix * at_tangent.xyz));
+    vec3 normal = normalize(mat3(gbufferModelViewInverse) * (gl_NormalMatrix * gl_Normal));
+    TBN = tbnNormalTangent(normal, tagent, at_tangent.w); 
 }
 
 #endif // VERTEX_SHADER
@@ -34,6 +41,8 @@ void main() {
 
 uniform sampler2D lightmap;
 uniform sampler2D gtexture;
+uniform sampler2D normals;
+uniform sampler2D specular;
 
 uniform mat4 gbufferModelViewInverse;
 uniform mat4 gbufferProjectionInverse;
@@ -42,11 +51,13 @@ uniform vec3 sunPosition;
 
 uniform float viewWidth;
 uniform float viewHeight;
+uniform vec3 cameraPosition;
 
 uniform sampler2D depthtex0;
 uniform int isEyeInWater;
 uniform vec3 fogColor;
 
+#include "/lib/light.glsl"
 
 /* RENDERTARGETS: 0 */
 layout(location = 0) out vec4 color;
@@ -70,6 +81,7 @@ void ApplyFog() {
     }
 }
 
+
 void main() {
 	color = texture(gtexture, texcoord) * glcolor;
 	color *= texture(lightmap, lmcoord);
@@ -86,10 +98,15 @@ void main() {
     #endif // DISTANT_WATER
 
 
-    vec3 shadowLightDirection = normalize(mat3(gbufferModelViewInverse) * shadowLightPosition);
-    float lightBrightness = clamp(dot(shadowLightDirection, normal), 0.2,1.0);
-    color *= lightBrightness;
+    vec3 screenPos = vec3(gl_FragCoord.xy / vec2(viewWidth, viewHeight), 1.0);
+    vec3 viewPos = screenToView(screenPos, gbufferProjectionInverse);
 
-    ApplyFog();
+    vec3 feetPlayerPos = (gbufferModelViewInverse * vec4(viewPos, 1.0)).xyz;
+
+    vec3 worldPos = feetPlayerPos + cameraPosition;
+    vec3 viewDir = normalize(cameraPosition - worldPos);
+
+    float lightBrightness = calculateLightingFactor(worldPos, viewDir);
+    color.rgb *= lightBrightness;
 }
 #endif // FRAGMENT_SHADER
