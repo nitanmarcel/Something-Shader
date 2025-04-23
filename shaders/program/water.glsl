@@ -4,6 +4,7 @@ varying vec2 lmcoord;
 varying vec4 glcolor;
 varying vec2 texcoord;
 varying mat3 TBN;
+varying vec3 normal;
 
 #define FOG_DENSITY 0.1
 
@@ -27,7 +28,7 @@ void main() {
 	glcolor = gl_Color;
 
     vec3 tagent = normalize(mat3(gbufferModelViewInverse) * (gl_NormalMatrix * at_tangent.xyz));
-    vec3 normal = normalize(mat3(gbufferModelViewInverse) * (gl_NormalMatrix * gl_Normal));
+    normal = normalize(mat3(gbufferModelViewInverse) * (gl_NormalMatrix * gl_Normal));
     TBN = tbnNormalTangent(normal, tagent, at_tangent.w); 
 }
 
@@ -95,18 +96,20 @@ void main() {
         if (depth != 1.0) {
             discard;
         }
+        vec3 shadowLightDirection = normalize(mat3(gbufferModelViewInverse) * shadowLightPosition);
+        float lightBrightness = clamp(dot(shadowLightDirection, normal), 0.2,1.0);
+        color *= lightBrightness;
+    #else
+        vec3 screenPos = vec3(gl_FragCoord.xy / vec2(viewWidth, viewHeight), 1.0);
+        vec3 viewPos = screenToView(screenPos, gbufferProjectionInverse);
+
+        vec3 feetPlayerPos = (gbufferModelViewInverse * vec4(viewPos, 1.0)).xyz;
+
+        vec3 worldPos = feetPlayerPos + cameraPosition;
+        vec3 viewDir = normalize(cameraPosition - worldPos);
+
+        float lightBrightness = calculateLightingFactor(worldPos, viewDir);
+        color.rgb *= lightBrightness;
     #endif // DISTANT_WATER
-
-
-    vec3 screenPos = vec3(gl_FragCoord.xy / vec2(viewWidth, viewHeight), 1.0);
-    vec3 viewPos = screenToView(screenPos, gbufferProjectionInverse);
-
-    vec3 feetPlayerPos = (gbufferModelViewInverse * vec4(viewPos, 1.0)).xyz;
-
-    vec3 worldPos = feetPlayerPos + cameraPosition;
-    vec3 viewDir = normalize(cameraPosition - worldPos);
-
-    float lightBrightness = calculateLightingFactor(worldPos, viewDir);
-    color.rgb *= lightBrightness;
 }
 #endif // FRAGMENT_SHADER
