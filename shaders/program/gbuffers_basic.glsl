@@ -1,7 +1,6 @@
 #version 330 compatibility
 
-varying vec3 geoNormal;
-varying vec3 tagent;
+varying mat3 TBN;
 
 #ifdef VERTEX_SHADER
 
@@ -12,17 +11,20 @@ in vec4 at_tangent;
 
 uniform mat4 gbufferModelViewInverse;
 
+mat3 tbnNormalTangent(vec3 normal, vec3 tangent, float handedness) {
+    vec3 bitangent = normalize(cross(tangent,normal) * handedness);
+    return mat3(tangent, bitangent, normal);
+}
+
 void main() {
     gl_Position = ftransform();
     texcoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
     lmcoord = (gl_TextureMatrix[1] * gl_MultiTexCoord1).xy;
     glcolor = gl_Color;
 
-    tagent = gl_NormalMatrix * at_tangent.xyz;
-    tagent = normalize(mat3(gbufferModelViewInverse) * tagent);
-
-    geoNormal = gl_NormalMatrix * gl_Normal;
-    geoNormal = normalize(mat3(gbufferModelViewInverse) * geoNormal);    
+    vec3 tagent = normalize(mat3(gbufferModelViewInverse) * (gl_NormalMatrix * at_tangent.xyz));
+    vec3 normal = normalize(mat3(gbufferModelViewInverse) * (gl_NormalMatrix * gl_Normal));
+    TBN = tbnNormalTangent(normal, tagent, at_tangent.w); 
 }
 #endif // VERTEX_SHADER
 
@@ -53,11 +55,6 @@ uniform vec3 cameraPosition;
 /* RENDERTARGETS: 0 */
 layout(location = 0) out vec4 color;
 
-mat3 tbnNormalTangent(vec3 normal, vec3 tangent) {
-    vec3 bitangent = normalize(cross(tangent,normal));
-    return mat3(tangent, bitangent, normal);
-}
-
 float calculateLightingFactor(vec3 worldPos, vec3 viewDir) {
     #ifndef DISABLE_INDIRECT_LIGHTING
         vec3 shadowLightDirection = normalize(mat3(gbufferModelViewInverse) * shadowLightPosition);
@@ -65,7 +62,6 @@ float calculateLightingFactor(vec3 worldPos, vec3 viewDir) {
         vec4 normalData = texture(normals, texcoord)*2.0-1.0;
 
         vec3 normalNormal = vec3(normalData.xy, sqrt(1.0 - dot(normalData.xy, normalData.xy))*2.0-1.0);
-        mat3 TBN = tbnNormalTangent(geoNormal, tagent);
 
         vec3 normalWorld = TBN * normalNormal;
         
