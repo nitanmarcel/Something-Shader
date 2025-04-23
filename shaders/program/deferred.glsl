@@ -1,6 +1,6 @@
 #version 330 compatibility
 
-#define CLOUD_SCALE 0.004
+#define CLOUD_SCALE 0.01
 #define FOG_DENSITY 0.5
 
 #ifdef VERTEX_SHADER
