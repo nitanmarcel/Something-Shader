@@ -86,13 +86,57 @@ float fogFactor(
     return 1.0 - clamp(exp2(d * d * LOG2), 0.0, 1.0);
 }
 
-
 void ApplyFog() {
-
     if (isEyeInWater == 1) {
         float fogDistance = gl_FragCoord.z / gl_FragCoord.w;
         float fogAmount = fogFactor(fogDistance, FOG_DENSITY);
         color.rgb = mix(color.rgb, fogColor, fogAmount);
+    }
+}
+
+void RenderClouds(vec3 feetPlayerPos, vec3 rayDir, vec3 worldSunDir) {
+    float wind = 0.005 * frameTimeCounter;
+    vec2 windDirection = vec2(0.8, 0.2);
+
+    float cirrus = 0.25 + rainStrength * 0.3;
+    float cumulus = 0.45 + rainStrength * 0.6;
+    
+    float rayPlaneAngle = rayDir.y;
+    if (rayPlaneAngle > 0.0001) {
+        float sunAngle = dot(normalize(rayDir), worldSunDir);
+
+        vec3 extinction = calculateExtinction(rayDir, worldSunDir);
+        float dayFactor = clamp(worldSunDir.y * 0.5 + 0.5, 0.1, 1.0);
+        
+        vec3 cloudColor = vec3(1.0, 1.0, 1.0) * dayFactor;
+
+        cloudColor *= extinction * 1.5;
+
+        cloudColor = mix(cloudColor, cloudColor * 0.4, rainStrength);
+
+        vec3 cirrusPos = CloudIntersection(feetPlayerPos, rayDir);
+        cirrusPos.xz += windDirection * wind * 2.0;
+
+        float cirrusShape = mix(fbm(cirrusPos * CLOUD_SCALE * 1.5), worleyNoise(cirrusPos * CLOUD_SCALE * 0.5), 0.3);
+        cirrusShape *= smoothstep(0.4, 0.6, noise(cirrusPos * CLOUD_SCALE * 0.2 + vec3(0, 0, wind * 0.5)));
+        float cirrusDensity = smoothstep(1.0 - cirrus, 1.0, cirrusShape) * 0.3;
+
+        vec3 cumulusPos = CloudIntersection(feetPlayerPos, rayDir);
+        cumulusPos.xz += windDirection * wind;
+
+        float cloudShape = mix(fbm(cumulusPos * CLOUD_SCALE), worleyNoise(cumulusPos * CLOUD_SCALE * 0.5), 0.5);
+
+        float cloudDetail = fbm(cumulusPos * CLOUD_SCALE * 3.0) * 0.2;
+
+        cloudShape += cloudDetail;
+
+        float cumulusDensity = smoothstep(1.0 - cumulus, 1.0 - cumulus + 0.1, cloudShape);
+
+        float shadow = smoothstep(0.3, 0.7, cloudShape);
+        vec3 shadowedColor = mix(cloudColor * 0.7, cloudColor, shadow);
+
+        color.rgb = mix(color.rgb, cloudColor, cirrusDensity);
+        color.rgb = mix(color.rgb, shadowedColor, cumulusDensity);
     }
 }
 
@@ -115,51 +159,12 @@ void main() {
         depth = min(dhDepth, depth);
     #endif
 
-    float wind = 0.005 * frameTimeCounter;
-    vec2 windDirection = vec2(0.8, 0.2);
-
-    float cirrus = 0.25 + rainStrength * 0.3;
-    float cumulus = 0.45 + rainStrength * 0.6;
-    if (rayDir.y > 0.0 && depth >= 1.0) {
-        float rayPlaneAngle = rayDir.y;
-        if (rayPlaneAngle > 0.0001) {
+    #ifdef OVERWORLD
+        if (rayDir.y > 0.0 && depth >= 1.0) {
             vec3 worldSunDir = normalize(mat3(gbufferModelViewInverse) * sunPosition);
-            float sunAngle = dot(normalize(rayDir), worldSunDir);
-
-            vec3 extinction = calculateExtinction(rayDir, worldSunDir);
-            float dayFactor = clamp(worldSunDir.y * 0.5 + 0.5, 0.1, 1.0);
-            
-            vec3 cloudColor = vec3(1.0, 1.0, 1.0) * dayFactor;
-
-            cloudColor *= extinction * 1.5;
-
-            cloudColor = mix(cloudColor, cloudColor * 0.4, rainStrength);
-
-            vec3 cirrusPos = CloudIntersection(feetPlayerPos, rayDir);
-            cirrusPos.xz += windDirection * wind * 2.0;
-
-            float cirrusShape = mix(fbm(cirrusPos * CLOUD_SCALE * 1.5), worleyNoise(cirrusPos * CLOUD_SCALE * 0.5), 0.3);
-             cirrusShape *= smoothstep(0.4, 0.6, noise(cirrusPos * CLOUD_SCALE * 0.2 + vec3(0, 0, wind * 0.5)));
-             float cirrusDensity = smoothstep(1.0 - cirrus, 1.0, cirrusShape) * 0.3;
-
-            vec3 cumulusPos = CloudIntersection(feetPlayerPos, rayDir);
-            cumulusPos.xz += windDirection * wind;
-
-            float cloudShape = mix(fbm(cumulusPos * CLOUD_SCALE), worleyNoise(cumulusPos * CLOUD_SCALE * 0.5), 0.5);
-
-            float cloudDetail = fbm(cumulusPos * CLOUD_SCALE * 3.0) * 0.2;
-
-            cloudShape += cloudDetail;
-
-            float cumulusDensity = smoothstep(1.0 - cumulus, 1.0 - cumulus + 0.1, cloudShape);
-
-            float shadow = smoothstep(0.3, 0.7, cloudShape);
-            vec3 shadowedColor = mix(cloudColor * 0.7, cloudColor, shadow);
-
-            color.rgb = mix(color.rgb, cloudColor, cirrusDensity);
-            color.rgb = mix(color.rgb, shadowedColor, cumulusDensity);
+            RenderClouds(feetPlayerPos, rayDir, worldSunDir);
         }
-    }
+    #endif // OVERWORLD
 
     ApplyFog();
 }
