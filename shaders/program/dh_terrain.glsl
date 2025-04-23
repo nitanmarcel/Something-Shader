@@ -38,7 +38,9 @@ uniform sampler2D noisetex;
 uniform mat4 gbufferModelViewInverse;
 uniform vec3 shadowLightPosition;
 uniform vec3 cameraPosition;
+
 uniform float alphaTestRef = 0.1;
+uniform float far;
 
 in vec2 lmcoord;
 in vec2 texcoord;
@@ -50,6 +52,11 @@ void main() {
 	color = texture(gtexture, texcoord) * glcolor;
 	color *= texture(lightmap, lmcoord);
 	if (color.a < alphaTestRef) {
+		discard;
+	}
+
+	float distanceFromCamera = length(pos);
+	if (distanceFromCamera < far) {
 		discard;
 	}
 
