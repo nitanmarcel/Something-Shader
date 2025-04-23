@@ -25,5 +25,18 @@ float calculateLightingFactor(vec3 worldPos, vec3 viewDir) {
 
     float ambientLight = 0.2;
 
-    return ambientLight + diffuseLight + specularLight;
+    float transitionFade = 1.0;
+    float transitionWidth = 0.05; 
+
+    if (sunAngle < transitionWidth || (sunAngle > 0.5 - transitionWidth && sunAngle < 0.5 + transitionWidth)) {
+        if (sunAngle < transitionWidth) {
+            transitionFade = smoothstep(0.0, transitionWidth, sunAngle);
+        } else if (sunAngle > 0.5 - transitionWidth && sunAngle < 0.5) {
+            transitionFade = smoothstep(0.0, transitionWidth, 0.5 - sunAngle);
+        } else {
+            transitionFade = smoothstep(0.0, transitionWidth, sunAngle - 0.5);
+        }
+    }
+
+    return ambientLight + (diffuseLight + specularLight) * transitionFade;
 }

@@ -42,7 +42,7 @@ uniform mat4 gbufferModelViewInverse;
 uniform mat4 gbufferProjectionInverse;
 uniform float viewWidth;
 uniform float viewHeight;
-
+uniform float sunAngle;
 
 uniform float alphaTestRef = 0.1;
 
