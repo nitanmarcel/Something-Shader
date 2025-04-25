@@ -12,7 +12,10 @@ void main() {
 
 #ifdef FRAGMENT_SHADER
 
-#include "/lib/pp/blur.glsl"
+/*
+const int colortex0Format = RGB16F;
+*/
+
 #include "/lib/settings.glsl"
 #include "/lib/colorconv.glsl"
 
@@ -25,6 +28,6 @@ layout(location = 0) out vec4 color;
 
 void main() {
 	color = texture(colortex0, texcoord);
-	color.rgb = toLinearSRGB(color.rgb, GAMMA);
+	color.rgb = fromLinearToSRGB(color.rgb, GAMMA);
 }
 #endif // FRAGMENT_SHADER
