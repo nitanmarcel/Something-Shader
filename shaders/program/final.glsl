@@ -4,10 +4,6 @@
 
 out vec2 texcoord;
 
-/*
-const int colortex0Format = RGB16F;
-*/
-
 void main() {
 	gl_Position = ftransform();
 	texcoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
@@ -16,19 +12,16 @@ void main() {
 
 #ifdef FRAGMENT_SHADER
 
-#include "/lib/pp/bloom.glsl"
 #include "/lib/settings.glsl"
 
 uniform sampler2D colortex0;
 
 in vec2 texcoord;
 
-/* RENDERTARGETS: 0,1 */
+/* RENDERTARGETS: 0 */
 layout(location = 0) out vec4 color;
-layout(location = 1) out vec4 color1;
 
 void main() {
 	color = texture(colortex0, texcoord);
-	color1 = GetBloomColor(colortex0, texcoord, BLOOM_STRENGTH);
 }
 #endif // FRAGMENT_SHADER

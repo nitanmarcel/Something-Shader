@@ -1,5 +1,7 @@
 #include "/lib/noise.glsl"
 
+#define SUN_INTENSITY 1.0
+
 uniform int renderStage;
 uniform int worldTime;
 
@@ -105,11 +107,8 @@ vec3 calculateSkyColor(vec3 pos, vec3 sun) {
     }
 
     if (renderStage == MC_RENDER_STAGE_SKY) {
-
         vec3 stars = getStars(viewDir);
-        
         float starVisibility = smoothstep(0.05, -0.05, sunDir.y);
-
         skyColor = mix(skyColor, max(skyColor, stars), starVisibility);
     } 
     
@@ -121,14 +120,25 @@ vec3 calculateSkyColor(vec3 pos, vec3 sun) {
     float visibility = smoothstep(0.0, 1.0, saturate(viewDir.y * 30.0));
     disc *= visibility;
     
-    vec3 sunColor = vec3(1.0, 0.98, 0.92);
+    vec3 sunColor = vec3(1.0, 0.98, 0.92) * SUN_INTENSITY;
     
     float sunAboveHorizon = smoothstep(-0.025, 0.025, sunDir.y);
-    skyColor += disc * sunColor * sunAboveHorizon;
     
+    // Apply sun disc with intensity factor
+    vec3 sunDisc = disc * sunColor * sunAboveHorizon;
+    
+    // Apply sun glow with intensity factor 
     float sunGlow = pow(max(0.0, visibility / (-sunViewDot * 250.0 + 250.01) - 0.1), 2.0) * 0.0002 * 100.0;
-    vec3 sunGlowColor = vec3(1.0, 0.7, 0.3);
+    vec3 sunGlowColor = vec3(1.0, 0.7, 0.3) * SUN_INTENSITY;
+    
+    // Add sun components to sky color
+    skyColor += sunDisc;
     skyColor += sunGlow * sunGlowColor * sunAboveHorizon;
-    skyColor = skyColor / (1.0 + skyColor * 0.5);
+    
+    // Modified tone mapping to allow more brightness from high SUN_INTENSITY values
+    // Using a modified version that allows more brightness when SUN_INTENSITY is high
+    float tonemapFactor = max(1.0, SUN_INTENSITY * 0.05);
+    skyColor = skyColor / (1.0 + skyColor * (0.5 / tonemapFactor));
+    
     return skyColor;
 }

@@ -1,6 +1,8 @@
 #version 330 compatibility
 
 varying mat3 TBN;
+varying vec3 geoNormal;
+
 
 #ifdef VERTEX_SHADER
 
@@ -23,8 +25,8 @@ void main() {
     glcolor = gl_Color;
 
     vec3 tagent = normalize(mat3(gbufferModelViewInverse) * (gl_NormalMatrix * at_tangent.xyz));
-    vec3 normal = normalize(mat3(gbufferModelViewInverse) * (gl_NormalMatrix * gl_Normal));
-    TBN = tbnNormalTangent(normal, tagent, at_tangent.w); 
+    geoNormal = normalize(mat3(gbufferModelViewInverse) * (gl_NormalMatrix * gl_Normal));
+    TBN = tbnNormalTangent(geoNormal, tagent, at_tangent.w); 
 }
 #endif // VERTEX_SHADER
 
@@ -72,7 +74,9 @@ void main() {
     vec3 worldPos = feetPlayerPos + cameraPosition;
     vec3 viewDir = normalize(cameraPosition - worldPos);
 
-    float lightBrightness = calculateLightingFactor(worldPos, viewDir);
+    color.rgb = pow(color.rgb, vec3(1.0 / 2.2));
+
+    float lightBrightness = calculateLightingFactor(worldPos, viewDir, geoNormal);
     color.rgb *= lightBrightness;
 }
 #endif // FRAGMENT_SHADER

@@ -4,10 +4,6 @@
 
 out vec2 texcoord;
 
-/*
-const int colortex0Format = RGB16F;
-*/
-
 void main() {
 	gl_Position = ftransform();
 	texcoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
@@ -16,10 +12,14 @@ void main() {
 
 #ifdef FRAGMENT_SHADER
 
+#include "/lib/pp/blur.glsl"
 #include "/lib/pp/bloom.glsl"
+#include "/lib/uncharted.glsl"
 #include "/lib/settings.glsl"
+#include "/lib/utils.glsl"
 
 uniform sampler2D colortex0;
+uniform sampler2D colortex1;
 
 in vec2 texcoord;
 
@@ -29,6 +29,7 @@ layout(location = 1) out vec4 color1;
 
 void main() {
 	color = texture(colortex0, texcoord);
-	color1 = GetBloomColor(colortex0, texcoord, BLOOM_STRENGTH);
+	color1 = GetBlurColor(colortex1, texcoord, false);
+
 }
 #endif // FRAGMENT_SHADER

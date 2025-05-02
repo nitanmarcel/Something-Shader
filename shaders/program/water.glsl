@@ -109,7 +109,7 @@ void main() {
         vec3 worldPos = feetPlayerPos + cameraPosition;
         vec3 viewDir = normalize(cameraPosition - worldPos);
 
-        float lightBrightness = calculateLightingFactor(worldPos, viewDir);
+        float lightBrightness = calculateLightingFactor(worldPos, viewDir, normal);
         color.rgb *= lightBrightness;
     #endif // DISTANT_WATER
 }
