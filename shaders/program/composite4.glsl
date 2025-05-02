@@ -13,7 +13,7 @@ void main() {
 #ifdef FRAGMENT_SHADER
 
 #include "/lib/pp/bloom.glsl"
-#include "/lib/uncharted.glsl"
+#include "/lib/filmic.glsl"
 #include "/lib/settings.glsl"
 #include "/lib/utils.glsl"
 
@@ -30,7 +30,7 @@ void main() {
 	vec4 bloomColor = texture2D(colortex1, texcoord);
 	color = sceneColor + bloomColor;
 
-	color.rgb = unchartedTonemapping(color.rgb * EXPOSURE);
+	color.rgb = filmic(color.rgb * EXPOSURE);
 
 	color.rgb = pow(color.rgb, vec3(2.2));
 

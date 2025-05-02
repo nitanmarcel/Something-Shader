@@ -14,7 +14,6 @@ void main() {
 
 #include "/lib/pp/blur.glsl"
 #include "/lib/pp/bloom.glsl"
-#include "/lib/uncharted.glsl"
 #include "/lib/settings.glsl"
 #include "/lib/utils.glsl"
 
